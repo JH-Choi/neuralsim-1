@@ -76,13 +76,18 @@ if __name__ == "__main__":
     for scene_i, scene_id in enumerate(tqdm(select_scene_ids, f'Extracting masks ...')):
         obs_id_list = sorted(os.listdir(os.path.join(args.data_root, scene_id, args.rgb_dirname)))
         
-        for obs_i, obs_id in enumerate(tqdm(obs_id_list, f'scene [{scene_i}/{len(select_scene_ids)}]')):
+        # for obs_i, obs_id in enumerate(tqdm(obs_id_list, f'scene [{scene_i}/{len(select_scene_ids)}]')):
+
+        for obs_id in [""]:
+         
+
             img_dir = os.path.join(args.data_root, scene_id, args.rgb_dirname, obs_id)
             mask_dir = os.path.join(args.data_root, scene_id, args.mask_dirname, obs_id)
             if not os.path.exists(mask_dir):
                 os.makedirs(mask_dir)
             
-            flist = sorted(glob(os.path.join(img_dir, '*.jpg')))
+            flist = sorted(glob(os.path.join(img_dir, '*.jpg'))+ glob(os.path.join(img_dir, '*.png')))
+
             for fpath in tqdm(flist, f'scene[{scene_i}][{obs_id}]'):
                 fbase = os.path.splitext(os.path.basename(os.path.normpath(fpath)))[0]
                 if args.no_compress:
