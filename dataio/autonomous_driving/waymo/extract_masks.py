@@ -4,6 +4,7 @@
 @brief  Extract semantic mask
 
 Using SegFormer, 2021. Cityscapes 83.2%
+                
 Relies on timm==0.3.2 & pytorch 1.8.1 (buggy on pytorch >= 1.9)
 
 Installation:
@@ -118,5 +119,4 @@ if __name__ == "__main__":
                 # plt.imshow(result[0])
                 
                 # show_result_pyplot(model, fpath, result, get_palette(args.palette))
-                
                 

@@ -81,7 +81,7 @@ use_estimate_alpha: false
 
 geo_init_method: pretrain_after_zero_out # pretrain, pretrain_after_zero_out
 
-camera_list: [camera]
+camera_list: [camera_FRONT]
 # camera_list: [camera_SIDE_LEFT, camera_FRONT_LEFT, camera_FRONT, camera_FRONT_RIGHT, camera_SIDE_RIGHT]
 
 #------------------------------------------------------------
@@ -89,25 +89,25 @@ camera_list: [camera]
 #------------------------------------------------------------
 # exp_dir: logs/streetsurf_refactor/dbgfix7_depth_seg938501_mono=${mono_fn}_${mono_w}_reg=${mono_w_reg}_aft=${mono_after}_erode=${erode}_wli=${w_nor_l1}_wcos=${w_nor_cos}_weik=${w_eikonal}_onocc=${on_occ_ratio}_a=${on_render_ratio}_wed=${on_render_type}_ctrlstart=${ctrl_start}_lnini=${lnini}_invs=${final_inv_s}_stop=${stop_it}_wsp=${w_sparsity}_for=${sparsity_anneal_for}_ini262144_depthre=${dep_thre}_nor${nor_mode}=${nor_thre}
 # exp_parent_dir: logs/final_final_waymo_multiseq_exp9.9_withmask_nolidar_12k_cuboid_half_ext${extend_size}_${rgb_fn}_joint
-exp_dir: logs/streetsurf/r3live/hku_campus_seq_00
+exp_dir: logs/streetsurf/hku_campus_seq_00
 
 dataset_cfg:
-  target: dataio.colmap.COLMAPDataset
+  target: dataio.autonomous_driving.WaymoDataset
   param:
     # root: /nvme/guojianfei/waymo/processed/
-    data_dir: /home/lyhan12/Dataset/r3live/hku_campus_seq_00
+    root: /home/lyhan12/Dataset/r3live/hku_campus_seq_00/waymo_format
     # root: /home/ventus/datasets/waymo/processed/
     # root: ./data/waymo/processed/
-    image_dirname: images
-    # lidar_dirname: lidars
-    # mask_dirname: masks
-    image_mono_depth_dirname: depths
-    image_mono_normals_dirname: normals
-    estimate_focus_center: average
+    rgb_dirname: images
+    lidar_dirname: lidars
+    mask_dirname: masks
+    rgb_mono_depth_dirname: depths
+    rgb_mono_normals_dirname: normals
 
 scenebank_cfg:
   # NOTE: scene_id[,start_frame[,n_frames]]
-  scenarios: [object]
+  scenarios:
+    - hku_campus_seq_00, 0, 163
     # - segment-15868625208244306149_4340_000_4360_000_with_camera_labels, 70
     # - segment-1172406780360799916_1660_000_1680_000_with_camera_labels
     # - segment-13476374534576730229_240_000_260_000_with_camera_labels, 0, 140
@@ -156,6 +156,8 @@ test_scenebank_cfg:
   observer_cfgs: 
     Camera:
       list: ${camera_list}
+    RaysLidar:
+      list: [lidar_TOP, lidar_FRONT, lidar_REAR, lidar_SIDE_LEFT, lidar_SIDE_RIGHT]
 
 assetbank_cfg:
   Street:
@@ -246,7 +248,7 @@ assetbank_cfg:
     asset_params:
       initialize_cfg: 
         target_shape: road_surface
-        obs_ref: camera # Reference observer. Its trajectory will be used for initialization.
+        obs_ref: camera_FRONT # Reference observer. Its trajectory will be used for initialization.
         lr: 1.0e-3
         num_iters: 1000
         num_points: 262144
@@ -366,12 +368,12 @@ training:
       camera:
         downscale: 1
         list: ${camera_list}
-      # rgb_mask: {}
-      # rgb_human_mask: {}
-      # rgb_ignore_mask:
-      #   ignore_not_occupied: false
-      #   ignore_dynamic: false
-      #   ignore_human: true
+      rgb_mask: {}
+      rgb_human_mask: {}
+      rgb_ignore_mask:
+        ignore_not_occupied: false
+        ignore_dynamic: false
+        ignore_human: true
       rgb_mono_depth: {}
       rgb_mono_normals: {}
     pixel_dataset:
@@ -397,18 +399,24 @@ training:
       scale: 1.0
       camera_sample_mode: uniform
       frame_sample_mode: uniform
+    # lidar_dataset:
+    #   equal_mode: ray_batch
+    #   num_rays: ${num_rays_lidar}
+    #   frame_sample_mode: uniform
+    #   lidar_sample_mode: merged_weighted
+    #   multi_lidar_weight: ${lidar_weight} # Will be normalized when used
   val_dataloader:
     preload: false
     tags:
       camera:
         downscale: 4
         list: ${camera_list}
-      # rgb_mask: {}
-      # rgb_human_mask: {}
-      # rgb_ignore_mask:
-      #   ignore_not_occupied: false
-      #   ignore_dynamic: false
-      #   ignore_human: true
+      rgb_mask: {}
+      rgb_human_mask: {}
+      rgb_ignore_mask:
+        ignore_not_occupied: false
+        ignore_dynamic: false
+        ignore_human: true
       rgb_mono_depth: {}
       rgb_mono_normals: {}
     image_dataset:
@@ -421,15 +429,14 @@ training:
     rgb: 
       fn_type: ${rgb_fn}
       fn_param: ${rgb_fn_param}
-      # respect_ignore_mask: true
+      respect_ignore_mask: true
     mono_normals:
       # distant_mode: cr_only
       distant_mode: ${nor_mode}
       w_l1: ${w_nor_l1}
       w_cos: ${w_nor_cos}
-      # ignore_mask_list: [pred_not_occupied, human, not_occupied]
-      ignore_mask_list: []
-      # mask_pred_thresh: ${nor_thre}
+      ignore_mask_list: [pred_not_occupied, human, not_occupied]
+      mask_pred_thresh: ${nor_thre}
       apply_in_pixel_train_step: false
     mono_depth:
       w: ${mono_w}
@@ -438,30 +445,36 @@ training:
       distant_mode: cr_only
       gt_pre_scale: 80.0
       gt_pre_shift: 1.0
-      # ignore_mask_list: [pred_not_occupied, human, not_occupied]
-      ignore_mask_list: []
-      # mask_pred_thresh: ${dep_thre}
-      # mask_erode: ${erode}
+      ignore_mask_list: [pred_not_occupied, human, not_occupied]
+      mask_pred_thresh: ${dep_thre}
+      mask_erode: ${erode}
       grad_reg_scales: ${mono_scales}
       enable_after: ${mono_after}
       detach_scale_shift: false
       scale_gt_to_pred: false
-    # occupancy_mask:
-    #   w: ${w_mask}
-    #   w_on_errmap: 0
-    #   safe_bce: true
-    #   pred_clip: 0
-    # mask_entropy:
-    #   w: 0.005
-    #   mode: crisp_cr
-    #   enable_after: 1500
-    #   anneal:
-    #     type: linear
-    #     start_it: 1500
-    #     stop_it: 4500
-    #     start_val: 0
-    #     stop_val: 0.005
-    #     update_every: 100
+    occupancy_mask:
+      w: ${w_mask}
+      w_on_errmap: 0
+      safe_bce: true
+      pred_clip: 0
+    mask_entropy:
+      w: 0.005
+      mode: crisp_cr
+      enable_after: 1500
+      anneal:
+        type: linear
+        start_it: 1500
+        stop_it: 4500
+        start_val: 0
+        stop_val: 0.005
+        update_every: 100
+    # lidar:
+    #   discard_outliers: 0
+    #   discard_outliers_median: ${discard_median}
+    #   discard_toofar: 80.0
+    #   depth: 
+    #     w: ${w_lidar}
+    #     fn_type: ${lidar_fn}
     eikonal:
       safe_mse: ${safe_mse}
       safe_mse_err_limit: ${errlim}

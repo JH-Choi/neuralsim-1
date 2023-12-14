@@ -40,7 +40,7 @@ class COLMAPDataset(DatasetIO):
         self.image_mono_depth_dirname = image_mono_depth_dirname
         self.image_mono_normals_dirname = image_mono_normals_dirname
         self.image_dir = os.path.join(self.data_dir, self.image_dirname)
-        self.main_class_name = "Street"
+        self.main_class_name = "Main"
         
         assert os.path.exists(self.data_dir), f"Not exist: {self.data_dir}"
         

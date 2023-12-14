@@ -163,6 +163,8 @@ class WaymoDataset(DatasetIO):
 
     def get_image(self, scene_id: str, camera_id: str, frame_index: int) -> np.ndarray:
         fpath = os.path.join(self.root, scene_id, self.rgb_dirname, camera_id, idx_to_img_filename(frame_index))
+        if not os.path.exists(fpath):
+            fpath = os.path.splitext(fpath)[0] + ".png"
         assert os.path.exists(fpath), f"Not exist: {fpath}"
         # [H, W, 3]
         return load_rgb(fpath)
